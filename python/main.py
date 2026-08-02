@@ -8,7 +8,7 @@ outros módulos. Essa separação é o que permite crescer o sistema
 sem esse arquivo virar uma bagunça gigante.
 """
 
-from colaboradores import listar_colaboradores
+from colaboradores import listar_colaboradores, buscar_colaborador
 
 
 def exibir_menu():
@@ -19,6 +19,7 @@ def exibir_menu():
     """
     print("\n=== HumanData RH Solutions ===")
     print("1. Listar colaboradores")
+    print("2. Buscar colaborador por nome/ID")
     print("0. Sair")
 
 
@@ -46,6 +47,35 @@ def exibir_colaboradores():
         )
 
 
+
+def exibir_busca():
+    """
+    Pede ao usuário o termo de busca, chama buscar_colaborador()
+    e formata a saída. Note que esta função também não sabe nada
+    de SQL — ela só lida com input/output do terminal.
+    """
+    termo = input("Digite o nome ou ID do colaborador: ").strip()
+
+    if not termo:
+        print("Você não digitou nada.")
+        return
+
+    resultados = buscar_colaborador(termo)
+
+    if not resultados:
+        print("Nenhum colaborador encontrado com esse termo.")
+        return
+
+    print(f"\n{'ID':>4} | {'Nome':<30} | {'Cargo':<25} | {'Departamento':<20} | Salário")
+    print("-" * 100)
+    for c in resultados:
+        print(
+            f"{c['idColaborador']:>4} | {c['Nome']:<30} | "
+            f"{c['Cargo']:<25} | {c['Departamento']:<20} | "
+            f"R$ {c['Salario']:.2f}"
+        )
+
+
 def main():
     """
     Loop principal do programa: mostra o menu, lê a escolha do
@@ -65,6 +95,8 @@ def main():
 
         if escolha == "1":
             exibir_colaboradores()
+        elif escolha == "2":
+            exibir_busca()
         elif escolha == "0":
             print("Encerrando o sistema...")
             break

@@ -79,6 +79,65 @@ def listar_colaboradores():
     return resultados
 
 
+def buscar_colaborador(termo):
+    """
+    Busca colaboradores por ID (se o termo digitado for um número)
+    ou por nome parcial (se for texto).
+
+    Por que usar %s como placeholder em vez de colar o valor direto
+    no texto da query com f-string?
+    - Segurança: se colássemos o valor do usuário direto no SQL,
+      alguém poderia digitar algo malicioso (SQL Injection) e alterar
+      o comportamento da query, ou até apagar dados.
+    - O placeholder "%s" reserva o lugar do valor, e o driver do
+      MySQL cuida de tratar esse valor como DADO, nunca como parte
+      do comando SQL. É o padrão correto para qualquer valor vindo
+      de fora (input do usuário, formulário web, etc.).
+    """
+    conn = get_connection()
+    if conn is None:
+        return []
+
+    cursor = conn.cursor(dictionary=True)
+
+    # .isdigit() verifica se a string digitada é composta só por
+    # números (ex: "12" -> True, "Ana" -> False). Usamos isso pra
+    # decidir se a busca é por ID exato ou por nome parcial.
+    if termo.isdigit():
+        query = """
+            SELECT
+                c.idColaborador, c.Nome, c.CPF, c.Salario,
+                d.Nome AS Departamento, ca.Titulo AS Cargo
+            FROM Colaborador c
+            JOIN Departamento d ON c.Departamento_idDepartamento = d.idDepartamento
+            JOIN Cargo ca ON c.Cargo_idCargo = ca.idCargo
+            WHERE c.idColaborador = %s
+        """
+        # Passamos o valor como uma TUPLA (termo,) — a vírgula é
+        # obrigatória mesmo com um único elemento, é assim que o
+        # Python diferencia uma tupla de um valor entre parênteses.
+        cursor.execute(query, (termo,))
+    else:
+        query = """
+            SELECT
+                c.idColaborador, c.Nome, c.CPF, c.Salario,
+                d.Nome AS Departamento, ca.Titulo AS Cargo
+            FROM Colaborador c
+            JOIN Departamento d ON c.Departamento_idDepartamento = d.idDepartamento
+            JOIN Cargo ca ON c.Cargo_idCargo = ca.idCargo
+            WHERE c.Nome LIKE %s
+        """
+        # O "%" dentro do valor (não da query) é o coringa do LIKE:
+        # "%termo%" significa "contém o termo em qualquer posição".
+        # Isso permite achar "Ana Souza" digitando só "ana".
+        cursor.execute(query, (f"%{termo}%",))
+
+    resultados = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return resultados
+
+
 if __name__ == "__main__":
     # Modo de teste: só roda se você executar "python colaboradores.py"
     # diretamente, não quando este arquivo for importado por outro.
